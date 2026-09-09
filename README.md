@@ -87,11 +87,25 @@ Koraci za kompilaciju WoW64 verzije Wine-a (koristeći `nix`):
        --enable-archs=i386,x86_64 CFLAGS="-g -Og -fno-inline"
    ```
 
+> Napomena: CFLAGS preporuke uzete iz dokumentacije: [Compiler Optimizations & Call-Stacks](https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine#compiler-optimizations--call-stacks)
+
+
 6) Pokrećemo `make`:
 
    ```bash
    make -j$(nproc)
    ```
+
+7) Provera da je Wine prepoznao da je Valgrind instaliran:
+
+``` bash
+grep VALGRIND include/config.h
+``` 
+Ova komanda treba da vrati:
+```bash
+#define HAVE_VALGRIND_MEMCHECK_H 1
+#define HAVE_VALGRIND_VALGRIND_H 1
+```
 
 ## Spisak korišćenih alata
 
