@@ -1,0 +1,53 @@
+make[1]: Entering directory '/home/nikola/Faks/vs/wine/2024_Analysis_wine/wine'
+tools/runtest -q -P wine -T . -M advapi32.dll -p dlls/advapi32/tests/x86_64-windows/advapi32_test.exe cred && touch dlls/advapi32/tests/x86_64-windows/cred.ok
+preloader: Warning: failed to reserve range 0000000000110000-0000000068000000
+==3525356== Syscall param ioctl(generic) points to uninitialised byte(s)
+==3525356==    at 0x4984C3D: ioctl (in /nix/store/n51dhmdbik1kfrsm62j5knavmigwrl1a-glibc-2.42-84/lib/libc.so.6)
+==3525356==    by 0x4ED4897: kernel_writewatch_init (virtual.c:291)
+==3525356==    by 0x4EDBE48: virtual_init (virtual.c:3664)
+==3525356==    by 0x4E9D4F9: __wine_main (loader.c:2297)
+==3525356==    by 0x4801473: main (main.c:184)
+==3525356==  Address 0x1ffefeada0 is on thread 1's stack
+==3525356==  in frame #1, created by kernel_writewatch_init (virtual.c:283)
+==3525356==  Uninitialised value was created by a stack allocation
+==3525356==    at 0x4ED484C: kernel_writewatch_init (virtual.c:283)
+==3525356== 
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   ioctl(generic)
+   fun:ioctl
+   fun:kernel_writewatch_init
+   fun:virtual_init
+   fun:__wine_main
+   fun:main
+}
+==3525356== LOAD_PDB_DEBUGINFO: Find PDB file: /tmp/nix-shell-3522297-3624872833/valgrind_petmp3525356_e5add848 is empty
+==3525356== Warning: Missing or un-stat-able /home/nikola/Faks/vs/wine/2024_Analysis_wine/wine/dlls/advapi32/tests/x86_64-windows/advapi32_test.pdb
+==3525356== LOAD_PDB_DEBUGINFO: Find PDB file: /tmp/nix-shell-3522297-3624872833/valgrind_petmp3525356_e5add848 is empty
+==3525356== Warning: Missing or un-stat-able /home/nikola/Faks/vs/wine/2024_Analysis_wine/wine/programs/start/x86_64-windows/start.pdb
+==3525356== LOAD_PDB_DEBUGINFO: Find PDB file: /tmp/nix-shell-3522297-3624872833/valgrind_petmp3525356_e5add848 is empty
+==3525356== Warning: Missing or un-stat-able /home/nikola/Faks/vs/wine/2024_Analysis_wine/wine/dlls/ntdll/x86_64-windows/ntdll.pdb
+0148:err:seh:segv_handler Got unexpected trap 0
+0148:err:seh:segv_handler Got unexpected trap 0
+0148:err:virtual:virtual_setup_exception nested exception on signal stack addr 0x4eb1974 stack 0x7ffceb00
+==3525356== 63 bytes in 1 blocks are definitely lost in loss record 13 of 28
+==3525356==    at 0x484D7D0: malloc (in /nix/store/7p6qjr2kqkbd0i3ylndwrxsb0j7m317k-valgrind-3.27.1/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3525356==    by 0x4E99479: build_path (loader.c:264)
+==3525356==    by 0x4E9B83A: init_paths (loader.c:459)
+==3525356==    by 0x4E9D4AA: __wine_main (loader.c:2283)
+==3525356==    by 0x4801473: main (main.c:184)
+==3525356== 
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:build_path
+   fun:init_paths
+   fun:__wine_main
+   fun:main
+}
+make[1]: *** [Makefile:4086: dlls/advapi32/tests/x86_64-windows/cred.ok] Error 1
+make[1]: Leaving directory '/home/nikola/Faks/vs/wine/2024_Analysis_wine/wine'
+make: *** [Makefile:21: x86_64-windows/cred.ok] Error 2

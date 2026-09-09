@@ -71,6 +71,7 @@ pkgs.mkShell {
     export WINEPREFIX=~/Faks/vs/wine/myprefix
     . "$WINESRC/tools/valgrind/vg-wrapper.sh"
     export WINETEST_WRAPPER="timeout --foreground --kill-after=1m 1h $(command -v valgrind)"
+    export WINEDLLOVERRIDES="mscoree,mshtml="
 
     export CCACHE_DIR="''${CCACHE_DIR:-$HOME/.cache/ccache-wine}"
     export CCACHE_MAXSIZE="40G"
