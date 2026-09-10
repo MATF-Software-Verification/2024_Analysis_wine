@@ -9,7 +9,7 @@ SCOPE='dlls/ntdll/unix/*'
 NAME=cppcheck-ntdll-unix
 
 OUTDIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$LOGDIR/../.." && pwd)"
+REPO_ROOT="$(cd "$OUTDIR/.." && pwd)"
 WINESRC="$REPO_ROOT/wine"
 
 cd "$WINESRC"
