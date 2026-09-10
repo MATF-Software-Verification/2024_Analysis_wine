@@ -167,3 +167,146 @@ Dalje, kada pogledamo `leave_handler` u `signal_x86_64.c:955`, vidimo sledeću i
    Ona je pozvana od strane `init_paths` (što se vidi i na steku poziva koji vraća Valgrind), koja nigde ne dealocira tu memoriju, pa imamo **definitivno curenje memorije** od 63 bajta.
 
    Razlog zbog kog ovo nije strašno je što se `init_paths` zapravo poziva jednom po `wine` procesu koji je pokrenut, i to unutar `__wine_main` funkcije, pa je to verovatno i razlog zašto do sad nije ništa urađeno povodom toga.
+
+
+
+## Cppcheck
+[Cppcheck](https://cppcheck.sourceforge.io/) je alat za statičku analizu koda koji se, prema njihovim rečima, veoma trudi da izbegne lažno-pozitivne prijave problema.
+
+Kako bismo ga pokrenuli, neophodno je da generišemo `compile_commands.json`, fajl koji će mu pomoći da vidi sa kojim flag-ovima je fajl preveden,
+od kojih su mu najbitnije dve: `-I` i `-D`. `-I` navodi direktorijume u kojima preprocesor treba da traži zaglavlja korišćena u fajlovima uz pomoć `#include` direktive.
+`-D` definiše makro direktive preprocesora, identično kao `#define` u fajlu, a što Wine dosta koristi, na primer u vidu `#ifdef` direktiva.
+
+Wine već ima u svom `Makefile` fajlu definisano sledeće:
+```makefile 
+depend: tools/makedep
+	tools/makedep -C
+```
+Ako pogledamo u fajl `tools/makedep.c`:
+```c
+static const char Usage[] =
+    "Usage: makedep [options]\n"
+    "Options:\n"
+    "   -C          Generate compile_commands.json along with the makefile\n"
+    "   -S          Generate Automake-style silent rules\n"
+    "   -fxxx       Store output in file 'xxx' (default: Makefile)\n";
+```
+Vidimo da Wine već ima implementiran način za automatsko generisanje `compile_commands.json`, tako da to i mi koristimo.
+
+Sada treba to proslediti cppcheck-u.
+Međutim, s obzirom da Wine-ov `compile_commands.json` ima oko 65 hiljada linija, nećemo pokretati `cppcheck` nad celim repozitorijumom,
+već ćemo ga ograničiti na "Unix stranu" (ELF stranu) Wine-a.
+Inicijalni test `cppcheck`-a je onda prosto:
+```bash
+cppcheck --project=compile_commands.json --file-filter='dlls/ntdll/unix/*'
+```
+Međutim, postoje 2 problema sa ispisom ove komande:
+   1. `cppcheck` podrazumevano ispisuje samo `error` nalaze
+   2. Dobijamo sledeći `error` skoro odmah na početku ispisa:
+   ```text
+   include/winnt.h:2021:2: error: #error You need to define a CONTEXT for your CPU [preprocessorErrorDirective]
+   ```
+Oba problema ćemo rešiti odgovarajućim flag-ovima:
+   1. `--enable=warning,style,performance,portability`
+   2. [ ] ` -D__x86_64__ -Dlinux`
+Prvi sam sebe opisuje, dok je drugi zanimljiviji.
+Naime, ako pogledamo mesto gde se desila greška koja je smetala cppcheck-u:
+```c
+#if !defined(CONTEXT_FULL) && !defined(RC_INVOKED)
+#error You need to define a CONTEXT for your CPU
+#endif
+```
+Vidimo da nemamo definisane ove makro direktive.
+Kratkom pretragom u fajlu nalazimo šta je neophodno da bi ih Wine definisao:
+```c
+#ifdef __x86_64__
+// ...
+#define CONTEXT_FULL CONTEXT_AMD64_FULL
+// ...
+```
+`-Dlinux` je dodat zbog druge `#ifdef` promene, konkretno iz `dlls/ntdll/unix/signal_x86_64.c` koji nam je poznat još iz Valgrind sekcije:
+```c
+#ifdef linux
+// ...
+#elif defined(__FreeBSD__) || defined (__FreeBSD_kernel__)
+// ...
+#elif defined(__NetBSD__)
+// ... 
+#elif defined (__APPLE__)
+// ...
+#else
+#error You must define the signal context functions for your platform
+```
+
+Biće dodato i još par manje zanimljivih flag-ova:
+```bash
+    --platform=unix64 \
+    -j"$(nproc)" \
+    --xml --xml-version=2 2> cppcheck/cppcheck-ntdll-unix.xml
+```
+`--platform` će reći cppcheck-u veličine tipova na našoj platformi (x86_64 Linux),
+dok se će xml izveštaj biti iskorišćen za generisanje html izveštaja pomoću `cppcheck-htmlreport`. Podrazumevano `cppcheck` ispisuje na `stderr`, što generator izveštaja ne ume da čita.
+Dakle, cela komanda koju ćemo pokrenuti je sledeća:
+```bash
+cd "$WINESRC" && cppcheck \
+    --project=compile_commands.json \
+    --file-filter='dlls/ntdll/unix/*' \
+    --enable=warning,style,performance,portability \
+    -D__x86_64__ -Dlinux \
+    --platform=unix64 \
+    -j"$(nproc)" \
+    --xml --xml-version=2 \
+    2> ../cppcheck/cppcheck-ntdll-unix.xml
+```
+Ovaj put nema one greške od malopre, pa generišemo html izveštaj radi bolje preglednosti,
+kako ne bi morali da čitamo xml direktno:
+```bash
+cd "$WINESRC" && cppcheck-htmlreport \
+    --file=../cppcheck/cppcheck-ntdll-unix.xml \
+    --report-dir=../cppcheck/html \
+    --source-dir=.
+```
+Ovo će izgenerisati html fajl u `cppcheck/html/index.html` koji možemo pogledati u internet pretraživaču.
+`cppcheck` je napravio `462` prijave ukupno: `338` stilskih, `77` upozorenja, `36` grešaka i `11` prijava vezanih za portabilnost.
+Ovaj izveštaj će se većinski fokusirati na greške.
+Jedna od veoma zanimljivih grešaka je sledeća ():
+```c
+static void add_option( const char *name, unsigned char set, unsigned char clear )
+{
+    // ....
+    if (nb_debug_options >= options_size)
+    {
+        options_size = max( options_size * 2, 16 );
+        debug_options = realloc( debug_options, options_size * sizeof(debug_options[0]) );<--- Common realloc mistake: 'debug_options' nulled but not freed upon failure
+    }
+
+    pos = min;
+    if (pos < nb_debug_options) memmove( &debug_options[pos + 1], &debug_options[pos],
+                                         (nb_debug_options - pos) * sizeof(debug_options[0]) );
+    strcpy( debug_options[pos].name, name );
+    debug_options[pos].flags = (default_flags & ~clear) | set;
+    nb_debug_options++;
+}
+```
+Sam `cppcheck` nam sugeriše šta se desilo.
+Suština problema je da `realloc` može da ne uspe, na primer kada nema dovoljno slobodne memorije da se realociranje desi.
+U tom slučaju, `realloc` će vratiti NULL.
+Ovde će to napraviti 2 problema:
+   1. Curenje memorije: stara memorija na koju je `debug_options` pokazivao neće nikako moći da bude dealocirana, ikad više, jer više nema pokazivača na nju, a `realloc` ne dealocira to automatski.
+   2. SEGFAULT: Nema provere da li je `debug_options == NULL`, a neposredno nakon `realloc` se `debug_options` koristi na više mesta, tako da je greška neizbežna. 
+
+Oko ovog problema je kontaktiran i jedan od Wine developera, koji je potvrdio da ovo može da se desi, ali i dao sledeće obrazloženje:
+```text
+"Considering the function is called only during early process boot (when the process executes its first trace() call ever, way before entering the exe's main), and the allocation can't go above a kilobyte unless user passes an insane WINEDEBUG env, it failing means zero chance the process would subsequently boot correctly, so I'd say not worth fixing."
+```
+Praktično, pod normalnim okolnostima, `realloc` bi pao zbog nedostatka memorije samo ako na sistemu nema ni `1KB` dodatnog slobodnog prostora. Ako zanemarimo sve druge probleme koje bi ovakav sistem imao, u ovom slučaju je bitno i to kada se ova funkcija izvršava. S obzirom da se izvršava i pre nego što je zapravo pokrenut Windows `.exe` program, ovo ne može da se desi u sred korišćenja programa. Čak i kad bismo popravili bag da Wine preživi neuspešan `realloc` ovde, svakako bi došlo do greške, samo par koraka kasnije, jer Wine mora da alocira svoje potrebne strukture, a što neće moći da uradi usled toga što sistem nema ni 1KB slobodne memorije.
+Što se tiče konkretne vrednosti od 1KB prostora koja je spomenuta, ona odgovara tačno 64 debug kanala, s obzirom da jedan kanal ima 16 bajtova:
+```c
+// debug.h
+struct __wine_debug_channel
+{
+    unsigned char flags;
+    char name[15];
+};
+```
+Napomena: Sam kod zapravo ne ograničava taj broj nikako, pa bi u teoriji korisnik mogao da prosledi konfiguraciju koja zahteva i više od jednog kilobajta, ali problem i dalje ostaje isti.

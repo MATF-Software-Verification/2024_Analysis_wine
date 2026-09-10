@@ -114,3 +114,4 @@ Ova komanda treba da vrati:
 ## TODO
 
 1) Komande za ne-nix sisteme
+2) cppcheck/html komitovati ili ne?

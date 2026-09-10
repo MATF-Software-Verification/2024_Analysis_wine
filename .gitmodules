@@ -1,7 +1,7 @@
 [submodule "wine"]
 	path = wine
 	url = https://gitlab.winehq.org/wine/wine.git
-  ignore = untracked
+    ignore = untracked
 [submodule "valgrind/wine-valgrind-scripts"]
 	path = valgrind/wine-valgrind-scripts
 	url = https://github.com/kubni/wine-valgrind-scripts.git
