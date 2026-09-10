@@ -65,6 +65,7 @@ pkgs.mkShell {
     # Tools
     valgrind
     cppcheck
+    clang-tools
 
   ];
   shellHook = ''
