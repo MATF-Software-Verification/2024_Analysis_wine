@@ -295,10 +295,9 @@ Ovde će to napraviti 2 problema:
    1. Curenje memorije: stara memorija na koju je `debug_options` pokazivao neće nikako moći da bude dealocirana, ikad više, jer više nema pokazivača na nju, a `realloc` ne dealocira to automatski.
    2. SEGFAULT: Nema provere da li je `debug_options == NULL`, a neposredno nakon `realloc` se `debug_options` koristi na više mesta, tako da je greška neizbežna. 
 
-Oko ovog problema je kontaktiran i jedan od Wine developera, koji je potvrdio da ovo može da se desi, ali i dao sledeće obrazloženje:
-```text
-"Considering the function is called only during early process boot (when the process executes its first trace() call ever, way before entering the exe's main), and the allocation can't go above a kilobyte unless user passes an insane WINEDEBUG env, it failing means zero chance the process would subsequently boot correctly, so I'd say not worth fixing."
-```
+Oko ovog problema je kontaktiran i jedan od Wine developera putem IRC-a, koji je potvrdio da ovo može da se desi, ali i dao sledeće obrazloženje:
+> "Considering the function is called only during early process boot (when the process executes its first trace() call ever, way before entering the exe's main), and the allocation can't go above a kilobyte unless user passes an insane WINEDEBUG env, it failing means zero chance the process would subsequently boot correctly, so I'd say not worth fixing."
+
 Praktično, pod normalnim okolnostima, `realloc` bi pao zbog nedostatka memorije samo ako na sistemu nema ni `1KB` dodatnog slobodnog prostora. Ako zanemarimo sve druge probleme koje bi ovakav sistem imao, u ovom slučaju je bitno i to kada se ova funkcija izvršava. S obzirom da se izvršava i pre nego što je zapravo pokrenut Windows `.exe` program, ovo ne može da se desi u sred korišćenja programa. Čak i kad bismo popravili bag da Wine preživi neuspešan `realloc` ovde, svakako bi došlo do greške, samo par koraka kasnije, jer Wine mora da alocira svoje potrebne strukture, a što neće moći da uradi usled toga što sistem nema ni 1KB slobodne memorije.
 Što se tiče konkretne vrednosti od 1KB prostora koja je spomenuta, ona odgovara tačno 64 debug kanala, s obzirom da jedan kanal ima 16 bajtova:
 ```c
@@ -309,4 +308,4 @@ struct __wine_debug_channel
     char name[15];
 };
 ```
-Napomena: Sam kod zapravo ne ograničava taj broj nikako, pa bi u teoriji korisnik mogao da prosledi konfiguraciju koja zahteva i više od jednog kilobajta, ali problem i dalje ostaje isti.
+Napomena: Sam kod zapravo ne ograničava taj broj nikako, pa bi u teoriji korisnik mogao da prosledi WINEDEBUG koja zahteva i više od jednog kilobajta, ali problem i dalje ostaje isti.
