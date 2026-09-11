@@ -309,3 +309,184 @@ struct __wine_debug_channel
 };
 ```
 Napomena: Sam kod zapravo ne ograničava taj broj nikako, pa bi u teoriji korisnik mogao da prosledi WINEDEBUG koja zahteva i više od jednog kilobajta, ali problem i dalje ostaje isti.
+
+
+
+## Clang-tidy
+[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) je statički analizator koji je deo `clang` / `llvm` ekosistema, i sastoji se iz dva bitna dela:
+
+Prvi su provere nad apstraktnim sintaksnim stablom (`bugprone-*`, `readability-*`, `performance-*`), koje traže sumnjive obrasce u kodu.
+
+Drugi je **Clang Static Analyzer** (`clang-analyzer-*`), koji radi simboličko izvršavanje: prolazi kroz program putanju po putanju, na svakom grananju bira granu, pamti ograničenja koja iz tog izbora slede, i tako donosi zaključke o vrednostima promenljivih na svakoj konkretnoj putanji.
+
+Analiza će se skoro isključivo fokusirati na samo određene `bugprone` prijave, kao i na Clang Static Analyzer koji je deo Clang-tidy alata,
+dok će stilske prijave biti isključene u velikoj meri.
+Specifično, komanda će iskoristiti flag `-*` da izbaci sve podrazumevane vrste prijava, a zatim će vratiti one koje mogu biti zanimljive: `clang-analyzer-*`, vratiti celu `bugprone`
+klasu, a onda opet skinuti sve koje nam nisu zanimljive:
+
+```bash
+cd "$WINESRC" && run-clang-tidy -p . -j"$(nproc)"     -checks='-*,bugprone-*,clang-analyzer-*,-bugprone-easily-swappable-parameters,-bugprone-narrowing-conversions,-bugprone-assignment-in-if-condition,-bugprone-suspicious-string-compare,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-clang-analyzer-security.insecureAPI.strcpy' 'dlls/ntdll/unix/.*\.c' > "$WINESRC/../clang-tidy/clang-tidy-ntdll-unix.txt" 2>&1
+```
+
+Kao što vidimo, opet analiziramo samo `unix` fajlove iz `ntdll`, dakle isto kao pre.
+Umesto gledanja celog generisanog log fajla, možemo iskoristiti `grep` da pogledamo samo prijave od strane Clang Static Analyzer-a, i to recimo za proveru pristupa nizu:
+```bash
+grep -n "clang-analyzer-security.ArrayBound" "$WINESRC/../clang-tidy/clang-tidy-ntdll-unix.txt"
+```
+Neki od rezultata nam govore da postoji potencijalna "out of bounds" greška, međutim za neke clang-tidy deluje ubeđeno. Evo primera jednog takvog rezultata:
+```text
+1561:dlls/ntdll/unix/security.c:378:42: warning: Out of bound access to memory after the end of 'info_len' [clang-analyzer-security.ArrayBound]
+```
+Sad možemo da pogledamo i malo detaljnije šta je govorio u logu o tome:
+```c
+dlls/ntdll/unix/security.c:378:42: warning: Out of bound access to memory after the end of 'info_len' [clang-analyzer-security.ArrayBound]
+  378 |     if (class < MaxTokenInfoClass) len = info_len[class];
+      |                                          ^~~~~~~~~~~~~~~
+dlls/ntdll/unix/security.c:376:5: note: Assuming the condition is true
+```
+Ovde možemo videti da Clang Static Analyzer zapravo razlikuje i beleži izbore prilikom `if` grananja, što Cppcheck recimo nije radio.
+Vidimo da ovde tvrdi da se u THEN grani dešava problem.
+Da bismo proverili da li je u pitanju lažno-pozitivni nalaz, pogledajmo malo detaljnije originalan Wine `security.c` fajl:
+```c
+/***********************************************************************
+ *             NtQueryInformationToken  (NTDLL.@)
+ */
+NTSTATUS WINAPI NtQueryInformationToken( HANDLE token, TOKEN_INFORMATION_CLASS class,
+                                         void *info, ULONG length, ULONG *retlen )
+{
+    static const ULONG info_len [] =
+    {
+        0,
+        0,    /* TokenUser */
+        0,    /* TokenGroups */
+        0,    /* TokenPrivileges */
+        0,    /* TokenOwner */
+        0,    /* TokenPrimaryGroup */
+        0,    /* TokenDefaultDacl */
+        sizeof(TOKEN_SOURCE), /* TokenSource */
+        sizeof(TOKEN_TYPE),  /* TokenType */
+        sizeof(SECURITY_IMPERSONATION_LEVEL), /* TokenImpersonationLevel */
+        sizeof(TOKEN_STATISTICS), /* TokenStatistics */
+        0,    /* TokenRestrictedSids */
+        sizeof(DWORD), /* TokenSessionId */
+        0,    /* TokenGroupsAndPrivileges */
+        0,    /* TokenSessionReference */
+        0,    /* TokenSandBoxInert */
+        0,    /* TokenAuditPolicy */
+        0,    /* TokenOrigin */
+        sizeof(TOKEN_ELEVATION_TYPE), /* TokenElevationType */
+        sizeof(TOKEN_LINKED_TOKEN), /* TokenLinkedToken */
+        sizeof(TOKEN_ELEVATION), /* TokenElevation */
+        0,    /* TokenHasRestrictions */
+        0,    /* TokenAccessInformation */
+        0,    /* TokenVirtualizationAllowed */
+        sizeof(DWORD), /* TokenVirtualizationEnabled */
+        sizeof(TOKEN_MANDATORY_LABEL) + sizeof(SID), /* TokenIntegrityLevel [sizeof(SID) includes one SubAuthority] */
+        sizeof(DWORD), /* TokenUIAccess */
+        0,    /* TokenMandatoryPolicy */
+        0,    /* TokenLogonSid */
+        sizeof(DWORD), /* TokenIsAppContainer */
+        0,    /* TokenCapabilities */
+        sizeof(TOKEN_APPCONTAINER_INFORMATION) + sizeof(SID), /* TokenAppContainerSid */
+        0,    /* TokenAppContainerNumber */
+        0,    /* TokenUserClaimAttributes*/
+        0,    /* TokenDeviceClaimAttributes */
+        0,    /* TokenRestrictedUserClaimAttributes */
+        0,    /* TokenRestrictedDeviceClaimAttributes */
+        0,    /* TokenDeviceGroups */
+        0,    /* TokenRestrictedDeviceGroups */
+        0,    /* TokenSecurityAttributes */
+        0,    /* TokenIsRestricted */
+        0     /* TokenProcessTrustLevel */
+    };
+
+
+    // ....
+
+    if (class < MaxTokenInfoClass) len = info_len[class];
+```
+Ovde vidimo da `info_len` ima 42 definisana elementa.
+Proverimo sad `TOKEN_INFORMATION_CLASS`, koji predstavlja enum tip od `class`:
+```c
+// wine/include/winnt.h
+typedef enum _TOKEN_INFORMATION_CLASS {
+    TokenUser = 1,
+    TokenGroups = 2,
+    TokenPrivileges = 3,
+    // ... Skraceno zbog preglednosti, ide redom
+    TokenIsAppSilo = 48,
+    TokenLoggingInformation = 49,
+    TokenLearningMode = 50,
+    MaxTokenInfoClass
+} TOKEN_INFORMATION_CLASS;
+```
+Vidimo da ovde ima 51 element!
+Vratimo se `if` naredbu:
+```c
+if (class < MaxTokenInfoClass) len = info_len[class];
+```
+Vidimo da nas trenutni uslov štiti ukoliko bi neko prosledio vrednost veću od `MaxTokenInfoClass`, i to bi bilo dovoljno.... kad bi dužina `info_len` niza bila identična broju elemenata `TOKEN_INFORMATION_CLASS` enuma.
+Međutim, verovatno je neko u nekom trenutku dodao tih 9 enum elemenata, a zaboravio da proširi `info_len` niz, pa u slučaju da je `class` u `[41, ..., 51]`, imamo zaista **pristup nizu van opsega**!
+
+Autor smatra da treba uraditi dve stvari u ovom slučaju:
+   1. Dopuniti `info_len` niz sa dodatnih 9 elemenata, pri čemu treba biti oprezan i proveriti
+      koje vrednosti zapravo treba da budu na tim mestima, da li obične nule ili neki `sizeof`.
+      
+   2. Promeniti `if` uslov u `if(class < ARRAY_SIZE(info_len))` čime će biti sprečeno ovako nešto zauvek. I dalje je prvi deo neophodan, ukoliko želimo tu funkcionalnost.
+   
+> Napomena: Na Wine commit-u koji projekat analizira, ispod ovog koda postoji `switch(class)` koji ne obrađuje tih 9 "skorije dodatih" elemenata, pa bi i samo promena 2 funkcionisala, ali autor smatra da je radi kompletnosti bolje odraditi i promenu 1.
+
+Ovo će biti prijavljeno Wine timu.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

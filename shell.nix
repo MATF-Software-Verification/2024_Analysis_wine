@@ -61,12 +61,12 @@ pkgs.mkShell {
     cabextract
     winetricks
     time
+    python3
 
     # Tools
     valgrind
     cppcheck
-    clang-tools
-
+    libclang
   ];
   shellHook = ''
     export WINESRC=~/Faks/vs/wine/2024_Analysis_wine/wine
@@ -78,5 +78,7 @@ pkgs.mkShell {
     export CCACHE_COMPILERCHECK="content"
     export CCACHE_SLOPPINESS="time_macros,locale"
     export CCACHE_BASEDIR="$HOME/Faks/vs/wine"
+
+    export VS_CLANG_CPATH="${pkgs.glibc.dev}/include:${pkgs.valgrind.dev}/include"
   '';
 }
