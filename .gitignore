@@ -1,4 +1,5 @@
 *.org
 cppcheck/html
 clang-tidy/*.txt
+ubsan/ubsan.*
 

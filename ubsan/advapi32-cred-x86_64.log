@@ -1,0 +1,64 @@
+make[1]: Entering directory '/home/nikola/Faks/vs/wine/2024_Analysis_wine/wine'
+tools/runtest -q -P wine -T . -M advapi32.dll -p dlls/advapi32/tests/x86_64-windows/advapi32_test.exe cred && touch dlls/advapi32/tests/x86_64-windows/cred.ok
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+0048:err:vulkan:vulkan_init_once Failed to load libvulkan.so.1
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+00d0:err:hid:parse_new_value_caps HID parser values overflow!
+00d0:err:hid:free_parser_state 2 unpopped device collection on the stack
+00d0:err:hid:get_device_descriptors Failed to get device 0x7a83b00e3da0 report descriptor, status 0xc0110008
+00c8:err:hid:parse_new_value_caps HID parser values overflow!
+00c8:err:hid:free_parser_state 2 unpopped device collection on the stack
+00c8:err:hid:get_device_descriptors Failed to get device 0x7a83b00e3da0 report descriptor, status 0xc0110008
+00c0:err:ntoskrnl:ZwLoadDriver failed to create driver L"\\Registry\\Machine\\System\\CurrentControlSet\\Services\\winebth": c00000e5
+003c:fixme:service:scmdatabase_autostart_services Auto-start service L"winebth" failed to start: 1359
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+0024:fixme:cred:CredReadW unhandled type -1
+0024:fixme:cred:CredReadW unhandled flags 0xdeadbeef
+0024:err:cred:CredWriteW bad username L"winetest"
+0024:err:cred:CredWriteW bad username (null)
+0060:fixme:mountmgr:write_credential not supported
+0060:fixme:mountmgr:delete_credential not supported
+0060:fixme:mountmgr:delete_credential not supported
+0024:err:cred:CredWriteW bad username (null)
+0024:fixme:cred:CredDeleteW unhandled type -1
+0024:fixme:cred:CredDeleteW unhandled flags 0xdeadbeef
+0024:fixme:cred:CredReadDomainCredentialsW (00007FFFFE9B0C70, 0x0, 00007FFFFE2FFC34, 00007FFFFE2FFB88) stub
+0024:fixme:cred:CredReadDomainCredentialsW (00007FFFFE9B0C70, 0x0, 00007FFFFE2FFC34, 00007FFFFE2FFB88) stub
+0024:fixme:cred:CredReadDomainCredentialsW (00007FFFFE9B0C70, 0x0, 00007FFFFE2FFC34, 00007FFFFE2FFB88) stub
+0060:fixme:mountmgr:enumerate_credentials not supported
+0060:fixme:mountmgr:enumerate_credentials not supported
+0024:fixme:cred:host_write_credential persist value of 3 not supported
+0060:fixme:mountmgr:write_credential not supported
+0060:fixme:mountmgr:enumerate_credentials not supported
+0060:fixme:mountmgr:enumerate_credentials not supported
+0060:fixme:mountmgr:read_credential not supported
+0060:fixme:mountmgr:delete_credential not supported
+cred.c:816: Tests skipped: CRED_TYPE_DOMAIN_VISIBLE_PASSWORD credentials are not supported or are disabled. Skipping
+0024:fixme:cred:CredIsMarshaledCredentialW BinaryBlobCredential not checked
+0024:fixme:cred:CredIsMarshaledCredentialW BinaryBlobCredential not checked
+make[1]: Leaving directory '/home/nikola/Faks/vs/wine/2024_Analysis_wine/wine'
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org

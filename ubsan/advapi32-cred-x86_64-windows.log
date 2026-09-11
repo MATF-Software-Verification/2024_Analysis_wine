@@ -1,0 +1,25 @@
+make[1]: Entering directory '/home/nikola/Faks/vs/wine/2024_Analysis_wine/wine'
+tools/runtest -q -P wine -T . -M advapi32.dll -p dlls/advapi32/tests/x86_64-windows/advapi32_test.exe cred && touch dlls/advapi32/tests/x86_64-windows/cred.ok
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+0170:fixme:cred:CredReadW unhandled type -1
+0170:fixme:cred:CredReadW unhandled flags 0xdeadbeef
+0170:err:cred:CredWriteW bad username L"winetest"
+0170:err:cred:CredWriteW bad username (null)
+0170:err:cred:CredWriteW bad username (null)
+0170:fixme:cred:CredDeleteW unhandled type -1
+0170:fixme:cred:CredDeleteW unhandled flags 0xdeadbeef
+0170:fixme:cred:CredReadDomainCredentialsW (00007FFFFE9B0C70, 0x0, 00007FFFFE2FFC34, 00007FFFFE2FFB88) stub
+0170:fixme:cred:CredReadDomainCredentialsW (00007FFFFE9B0C70, 0x0, 00007FFFFE2FFC34, 00007FFFFE2FFB88) stub
+0170:fixme:cred:CredReadDomainCredentialsW (00007FFFFE9B0C70, 0x0, 00007FFFFE2FFC34, 00007FFFFE2FFB88) stub
+0170:fixme:cred:host_write_credential persist value of 3 not supported
+cred.c:816: Tests skipped: CRED_TYPE_DOMAIN_VISIBLE_PASSWORD credentials are not supported or are disabled. Skipping
+0170:fixme:cred:CredIsMarshaledCredentialW BinaryBlobCredential not checked
+0170:fixme:cred:CredIsMarshaledCredentialW BinaryBlobCredential not checked
+Wine cannot find the FreeType font library.  To enable Wine to
+use TrueType fonts please install a version of FreeType greater than
+or equal to 2.0.5.
+http://www.freetype.org
+make[1]: Leaving directory '/home/nikola/Faks/vs/wine/2024_Analysis_wine/wine'

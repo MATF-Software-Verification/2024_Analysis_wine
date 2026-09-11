@@ -439,12 +439,75 @@ Autor smatra da treba uraditi dve stvari u ovom slučaju:
 Ovo će biti prijavljeno Wine timu.
 
 
+## UndefinedBehaviorSanitizer (UBSan)
+[UndefinedBehaviorSanitizer](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html) je detektor nedefinisanog ponašanja. Za razliku od `cppcheck` i `clang-tidy` koji su vršili statičku analizu, UBSan vrši dinamičku analizu.
 
+UBSan zahteva od nas da prevedemo kod sa instrumentacijom.
+Zbog toga je neophodna izmena Wine build sistema, koja je data u `custom.patch` fajlu,
+i dodaje `-fsanitize=undefined` i `-fno-omit-frame-pointer` u `UNIX_CFLAGS` i `-fsanitize=undefined` u `UNIX_LIBS`. Prvo je neophodno da bi se instrumentacija uključila,
+a drugo da bi kompajler umeo da razreši `__ubsan_handle_*` simbole.
 
+Sama UBSan dokumentacija predlaže `'fsanitize=undefined` kao flag koji dodaje određenu količinu provera koje predstavljaju nešto osnovno što UBSan radi, dok je `-fno-omit-frame-pointer` dodat zbog `print_stacktrace=1` da bi mogao stek da se rekonstruiše.
 
+### Koraci
+   1. Primenimo izmenu:
+    ```bash
+   cd $WINESRC && git apply ../custom.patch
+   ```
+   2. Zbog izmene u `Makefile.in`, neophodno je regenerisati `compile_commands.json` i ponovo kompajlovati Wine:
+   ```bash
+   make depend
+   make clean
+   make -j$(nproc)
+   ```
+   3. Za svaki slučaj ažuriramo prefiks (ili napravimo ukoliko ga nemamo):
+```bash
+      ./wine wineboot -u
+```
+   4. Pokrenemo isti test kao kod Valgrinda, `cred` iz `advapi32` modula.
+```bash
+   export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:log_path=../ubsan/ubsan"
+   cd dlls/advapi32/tests && rm -f x86_64-windows/cred.ok && make x86_64-windows/cred.ok
+```
+>  `halt_on_error=0` znači da se izvršavanje nastavlja posle prijave, pa se u jednom prolazu prikupe sve. `log_path` pravi po jedan fajl po procesu (`ubsan.PID`), jer jedno pokretanje testa podigne više Wine procesa, a svi koriste isti instrumentisani `ntdll.so`.
+   5. Grepujemo npr. samo `runtime error` greške:
+```bash
+   cat "$WINESRC/../ubsan/"ubsan.* 2>/dev/null | grep "runtime error"
+```
 
+Hajde da razmotrimo poznati `debug.c` fajl, ali ovaj put sa drugačijom greškom:
+```text
+dlls/ntdll/unix/debug.c:366:5: runtime error: null pointer passed as argument 2, which is declared to never be null
+```
+Pogledajmo kod:
+```c
+void dbg_init(void)
+{
+    struct __wine_debug_channel *options, default_option = { default_flags };
 
+    setbuf( stdout, NULL );
+    setbuf( stderr, NULL );
 
+    if (nb_debug_options == -1) init_options();
+
+    options = (struct __wine_debug_channel *)((char *)peb + (is_win64 ? 2 : 1) * page_size);
+    memcpy( options, debug_options, nb_debug_options * sizeof(*options) ); // Problematična linija
+    free( debug_options );
+    debug_options = options;
+    options[nb_debug_options] = default_option;
+    init_done = TRUE;
+}
+```
+UBSan tvrdi da je u problematičnom pozivu `memcpy` funkcije drugi argument, tj. `debug_options` zasigurno NULL u našem pokretanju bio.
+Ukratko:
+   1. Funkcija `init_options` čita `WINEDEBUG` promenljivu okruženja i smešta to u svoju `wine_debug` promenljivu. 
+   2. Funkcija `parse_options` parsira opcije i dodaje ih sa `add_options`
+   3. Promenljiva`debug_options` se realocira i koristi kao globalna promenljiva u funkciji `dbg_init` koju vidimo iznad.
+   
+Ovde vidimo prednost dinamičke analize, i ovo je nešto što `cppcheck` i `clang-tidy` nisu uspeli da uhvate, a to je da je `debug_options` zaista u našem pokretanju bio `NULL` jer nismo definisali `WINEDEBUG`.
+
+Prosleđivanje `debug_options` koji je `NULL` neće imati velike posledice jer je treći argument veličina koja će biti 0, ali je to i dalje **formalno nedefinisano ponašanje**, jer [standard](https://port70.net/~nsz/c/c11/n1570.html#7.1.4) traži da pokazivači budu validni i kada je broj bajtova nula.
+> Isečak iz standarda: If an argument to a function has an invalid value (such as a value outside the domain of the function, or a pointer outside the address space of the program, or a **null pointer**, or a pointer to non-modifiable storage when the corresponding parameter is not const-qualified) or a type (after promotion) not expected by a function with variable number of arguments, the behavior is undefined.
 
 
 

@@ -71,6 +71,7 @@ pkgs.mkShell {
   shellHook = ''
     export WINESRC=~/Faks/vs/wine/2024_Analysis_wine/wine
     export WINEDLLOVERRIDES="mscoree,mshtml="
+    export WINEPREFIX=~/Faks/vs/wine/myprefix
 
     export CCACHE_DIR="''${CCACHE_DIR:-$HOME/.cache/ccache-wine}"
     export CCACHE_MAXSIZE="40G"
