@@ -447,24 +447,30 @@ Zbog toga je neophodna izmena Wine build sistema, koja je data u `custom.patch` 
 i dodaje `-fsanitize=undefined` i `-fno-omit-frame-pointer` u `UNIX_CFLAGS` i `-fsanitize=undefined` u `UNIX_LIBS`. Prvo je neophodno da bi se instrumentacija uključila,
 a drugo da bi kompajler umeo da razreši `__ubsan_handle_*` simbole.
 
-Sama UBSan dokumentacija predlaže `'fsanitize=undefined` kao flag koji dodaje određenu količinu provera koje predstavljaju nešto osnovno što UBSan radi, dok je `-fno-omit-frame-pointer` dodat zbog `print_stacktrace=1` da bi mogao stek da se rekonstruiše.
+Sama UBSan dokumentacija predlaže `'-fsanitize=undefined` kao flag koji dodaje određenu količinu provera koje predstavljaju nešto osnovno što UBSan radi, dok je `-fno-omit-frame-pointer` dodat zbog `print_stacktrace=1` da bi mogao stek da se rekonstruiše.
 
 ### Koraci
    1. Primenimo izmenu:
+
     ```bash
    cd $WINESRC && git apply ../custom.patch
    ```
-   2. Zbog izmene u `Makefile.in`, neophodno je regenerisati `compile_commands.json` i ponovo kompajlovati Wine:
+
+   2. Zbog izmene u `Makefile.in`, neophodno je regenerisati sam `Makefile` i ponovo kompajlovati Wine:
+
    ```bash
    make depend
    make clean
    make -j$(nproc)
    ```
+
    3. Za svaki slučaj ažuriramo prefiks (ili napravimo ukoliko ga nemamo):
+   
 ```bash
       ./wine wineboot -u
 ```
    4. Pokrenemo isti test kao kod Valgrinda, `cred` iz `advapi32` modula.
+   
 ```bash
    export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:log_path=../ubsan/ubsan"
    cd dlls/advapi32/tests && rm -f x86_64-windows/cred.ok && make x86_64-windows/cred.ok
