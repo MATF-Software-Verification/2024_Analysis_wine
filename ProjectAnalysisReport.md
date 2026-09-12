@@ -646,7 +646,7 @@ UNIX_LIBS    = $(IOKIT_LIBS) ... $(HWLOC_LIBS) --coverage
 
 Ovo možemo uraditi i pomoću `git`-a, lakše:
 ```bash
-   cd $WINESRC && git checkout dlls/ntdll/Makefile.in && git apply ../custom-gcov.patch
+cd $WINESRC && git checkout dlls/ntdll/Makefile.in && git apply ../custom-gcov.patch
 ```
 
 
@@ -673,17 +673,68 @@ gcov -o "$WINESRC/dlls/ntdll/unix" "$WINESRC/dlls/ntdll/unix"/*.c
 ```
 
 
+## Perf
+[`perf`](https://perfwiki.github.io/main/) je profajler iz Linux jezgra i on ne vrši instrumentaciju koda nego uzorkuje: nekoliko hiljada puta u sekundi prekine program i zabeleži programski brojač i stek, pa se iz tih uzoraka izvede raspodela vremena po funkcijama.
+
+Koristimo ga zbog potencijalnog pronalaska uskih grla, a nijedan od prethodnih alata tu kategoriju ne pokriva.
+
+> Napomena: Do sad smo u CFLAGS imali stvari poput -Og i -fno-inline, koji su nam davali kvalitetnije ispise kod prethodnih alata, ali sada bi nam štetili, jer želimo da vidimo stvarnu sliku kako se šta izvršava sa podrazumevanim podešavanjima.
+
+Skriptu koja će pokrenuti `perf` pokrećemo sa
+```bash
+bash perf/run_perf.sh
+```
+Mozemo videti rezultate analize u proizvedenom logu.
+
+Konkretno, skripta je podešena da pokrene perf nad `file` grupom testova iz `ntdll`.
+Dodatno, zbog statističke pouzdanosti (s obzirom da baratamo uzorcima), skripta pokreće 
+iznova `perf` 20 puta.
+
+Neki od važnih nalaza:
+   1. Oko 37% uzoraka se odnosi na inicijalizaciju fontova:
+      ```text
+      21.12%  libfreetype
+      8.42%  libexpat
+      7.43%  libfontconfig
+      ```
+      To praktično znači da je u 37% momenata u kojima je `perf` prekinuo izvršavanje, procesor
+      izvršavao kod iz ovih biblioteka.
+     
+   2. Najskuplja pojedinačna funkcija je `tt_cmap12_validate`, koja se pojavljuje dva puta u 
+      spisku:
+      ```text
+      6.28%  ntdll_test.exe  libfreetype  [.] tt_cmap12_validate
+      5.52%  conhost.exe     libfreetype  [.] tt_cmap12_validate
+      ```
+      pri čemu je `ntdll_test.exe` logično naše pokretanje testa, dok je `conhost.exe` je Wine
+      proces koji se bavi konzolom, pa i on inicijalizuje fontove.
+       
+   3. Najskuplja funkcija u `ntdll/unix` je `find_env_var`,
+      a lanac poziva iz profila pokazuje odakle dolazi:
+      ```text
+      6.09%  find_env_var
+      └─ 6.04%  wcslen
+          └─ 4.90%  set_env_var
+                  └─ 2.79%  add_registry_variables
+                              add_registry_environment
+                              build_initial_params
+                              __wine_main
+      ```
+    Wine pri pokretanju svakog procesa gradi okruženje tako što promenljive iz registry-ja
+    postavlja jednu po jednu. Pre svakog postavljanja proveri da li ta promenljiva već postoji,
+    da je ne bi duplirao, a ta provera je linearno pretraživanje celog okruženja.
+
+    Skoro sve vreme (6.04 od 6.09 procenata) odlazi na `wcslen`. Razlog je što Windows okruženje
+    nije niz nego jedan neprekidan blok stringova, pa se do sledeće promenljive može doći jedino
+    tako što se pređe cela prethodna.
+
+    Pošto se to ponavlja za svaku promenljivu, posao raste sa kvadratom njihovog broja.
+    Ovo nije greška u Wine implementaciji, već posledica onoga o čemu smo već pisali,
+    a to je da Wine nema svoju specifikaciju već smatra Windows "istinom". 
 
 
-
-
-
-
-
-
-
-
-
+Zaključak vezan za `perf` jeste da se vreme troši na pripremu okruženja procesa, a ne na posao koji program obavlja. Međutim ovo važi samo za kratkotrajne procese poput našeg pokretanja `file` testa. 
+Merenje nam dakle ne govori da je Wine uvek spor, nego da je cena pokretanja procesa visoka.
 
 
 

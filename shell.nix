@@ -67,6 +67,7 @@ pkgs.mkShell {
     valgrind
     cppcheck
     libclang
+    perf
   ];
   shellHook = ''
     export WINESRC=~/Faks/vs/wine/2024_Analysis_wine/wine

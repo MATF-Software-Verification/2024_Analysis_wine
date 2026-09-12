@@ -1,0 +1,80 @@
+    33.00%     1.50%  ntdll_test.exe  ntdll.so                 [.] __wine_syscall_dispatcher
+            |
+            ---__wine_syscall_dispatcher
+               |          
+               |--16.42%--NtUserInitializeClientPfnArrays
+               |          pthread_once@GLIBC_2.2.5
+               |          __pthread_once_slow.isra.0
+               |          init_user
+               |          |          
+               |           --16.37%--gdi_init
+               |                     |          
+               |                      --16.35%--font_init
+               |                                |          
+               |                                |--13.95%--freetype_load_fonts
+               |                                |          load_fontconfig_fonts (inlined)
+               |                                |          |          
+               |                                |           --13.95%--fontconfig_add_fonts_from_dir_list (inlined)
+               |                                |                     |          
+               |                                |                      --13.65%--fontconfig_add_fonts_from_dir_list (inlined)
+               |                                |                                |          
+               |                                |                                 --13.34%--fontconfig_add_fonts_from_dir_list (inlined)
+               |                                |                                           |          
+               |                                |                                            --13.22%--fontconfig_add_fonts_from_dir_list (inlined)
+               |                                |                                                      |          
+               |                                |                                                      |--11.84%--fontconfig_add_fonts_from_dir_list (inlined)
+               |                                |                                                      |          |          
+               |                                |                                                      |           --11.75%--fontconfig_add_font (inlined)
+               |                                |                                                      |                     |          
+               |                                |                                                      |                      --11.51%--add_unix_face
+               |                                |                                                      |                                |          
+               |                                |                                                      |                                 --10.72%--unix_face_create
+               |                                |                                                      |                                           |          
+               |                                |                                                      |                                            --9.90%--new_ft_face (inlined)
+               |                                |                                                      |                                                      |          
+               |                                |                                                      |                                                       --9.85%--FT_New_Face
+               |                                |                                                      |                                                                 |          
+               |                                |                                                      |                                                                  --9.85%--ft_open_face_internal
+               |                                |                                                      |                                                                            |          
+               |                                |                                                      |                                                                             --9.52%--open_face
+               |                                |                                                      |                                                                                       |          
+               |                                |                                                      |                                                                                        --9.03%--cff_face_init
+               |                                |                                                      |                                                                                                  |          
+               |                                |                                                      |                                                                                                  |--7.03%--sfnt_load_face
+               |                                |                                                      |                                                                                                  |          |          
+               |                                |                                                      |                                                                                                  |           --6.65%--tt_face_build_cmaps.isra.0
+               |                                |                                                      |                                                                                                  |                     |          
+               |                                |                                                      |                                                                                                  |                     |--5.71%--tt_cmap12_validate
+               |                                |                                                      |                                                                                                  |                     |          
+               |                                |                                                      |                                                                                                  |                      --0.57%--tt_cmap4_validate
+               |                                |                                                      |                                                                                                  |          
+               |                                |                                                      |                                                                                                   --1.55%--cff_subfont_load
+               |                                |                                                      |                                                                                                             |          
+               |                                |                                                      |                                                                                                              --1.12%--cff_load_private_dict
+               |                                |                                                      |                                                                                                                        |          
+               |                                |                                                      |                                                                                                                         --0.95%--cff_parser_run
+               |                                |                                                      |          
+               |                                |                                                       --1.20%--fontconfig_add_font (inlined)
+               |                                |                                                                 |          
+               |                                |                                                                  --0.72%--add_unix_face
+               |                                |          
+               |                                |--1.35%--init_freetype_lib
+               |                                |          |          
+               |                                |           --1.15%--init_fontconfig (inlined)
+               |                                |                     |          
+               |                                |                      --0.87%--FcConfigInit
+               |                                |                                FcConfigEnsure
+               |                                |                                FcInitLoadConfigAndFonts
+               |                                |                                FcConfigBuildFonts
+               |                                |                                FcConfigAddDirList
+               |                                |                                |          
+               |                                |                                 --0.66%--FcDirCacheRead
+               |                                |                                           |          
+               |                                |                                            --0.63%--FcDirCacheLoad
+               |                                |                                                      |          
+               |                                |                                                       --0.60%--FcDirCacheProcess
+               |                                |          
+               |                                 --0.56%--load_registry_fonts
+               |          
+               |--7.15%--NtCreateFile
+               |          |          
