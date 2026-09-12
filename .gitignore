@@ -3,3 +3,5 @@ cppcheck/html
 clang-tidy/*.txt
 ubsan/ubsan.*
 tests/*.log
+tests/coverage/results/*.gcov
+

@@ -443,17 +443,17 @@ Ovo će biti prijavljeno Wine timu.
 [UndefinedBehaviorSanitizer](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html) je detektor nedefinisanog ponašanja. Za razliku od `cppcheck` i `clang-tidy` koji su vršili statičku analizu, UBSan vrši dinamičku analizu.
 
 UBSan zahteva od nas da prevedemo kod sa instrumentacijom.
-Zbog toga je neophodna izmena Wine build sistema, koja je data u `custom.patch` fajlu,
+Zbog toga je neophodna izmena Wine build sistema, koja je data u `custom-ubsan.patch` fajlu,
 i dodaje `-fsanitize=undefined` i `-fno-omit-frame-pointer` u `UNIX_CFLAGS` i `-fsanitize=undefined` u `UNIX_LIBS`. Prvo je neophodno da bi se instrumentacija uključila,
 a drugo da bi kompajler umeo da razreši `__ubsan_handle_*` simbole.
 
-Sama UBSan dokumentacija predlaže `'-fsanitize=undefined` kao flag koji dodaje određenu količinu provera koje predstavljaju nešto osnovno što UBSan radi, dok je `-fno-omit-frame-pointer` dodat zbog `print_stacktrace=1` da bi mogao stek da se rekonstruiše.
+Sama UBSan dokumentacija predlaže `-fsanitize=undefined` kao flag koji dodaje određenu količinu provera koje predstavljaju nešto osnovno što UBSan radi, dok je `-fno-omit-frame-pointer` dodat zbog `print_stacktrace=1` da bi mogao stek da se rekonstruiše.
 
 ### Koraci
    1. Primenimo izmenu:
 
-    ```bash
-   cd $WINESRC && git apply ../custom.patch
+   ```bash
+   cd $WINESRC && git checkout dlls/ntdll/Makefile.in && git apply ../custom-ubsan.patch
    ```
 
    2. Zbog izmene u `Makefile.in`, neophodno je regenerisati sam `Makefile` i ponovo kompajlovati Wine:
@@ -634,11 +634,43 @@ token.c:42: Test failed: got 1867804271
 ```
 Očekivano, 2 testa su pala.
 
+### Pokrivenost testovima 
+Biće korišćen `gcc`-ov alat `gcov`.
+Prvo ćemo, na isti način kao kod UBSan-a, omogućiti instrumentaciju, ovaj put dodavajući `--coverage`
+u `wine/dlls/ntdll/Makefile.in`:
+> Napomena: instrumentujemo samo `dlls/ntdll`, ne sve što Wine nudi!
+```bash
+UNIX_CFLAGS  = $(UNWIND_CFLAGS) $(HWLOC_CFLAGS) --coverage
+UNIX_LIBS    = $(IOKIT_LIBS) ... $(HWLOC_LIBS) --coverage
+```
+
+Ovo možemo uraditi i pomoću `git`-a, lakše:
+```bash
+   cd $WINESRC && git checkout dlls/ntdll/Makefile.in && git apply ../custom-gcov.patch
+```
 
 
+Ovo zahteva ponovno prevođenje:
+```bash
+cd "$WINESRC" && make depend && rm -f dlls/ntdll/unix/*.o && make -j$(nproc)
+```
 
+Pokrenemo testove uz pomoć skripte od malopre:
+```bash
+bash ./tests/run_tests.sh
+```
 
+Sada ćemo uz svaki `.c` fajl unutar `ntdll/unix` direktorijuma imati i `.gcda` i `.gcno` fajlove,
+pri čemu je `.gcno` nešto poput mape koda, tj. grafa toka upravljanja, dok `.gcda` sadrži brojače po granama grafa.
 
+Možemo generisati izveštaj, npr. za `security.c`....
+```bash
+gcov -o "$WINESRC/dlls/ntdll/unix" "dlls/ntdll/unix/security.c"
+```
+...ili za sve fajlove iz `dll/ntdll/unix`:
+```bash
+gcov -o "$WINESRC/dlls/ntdll/unix" "$WINESRC/dlls/ntdll/unix"/*.c 
+```
 
 
 

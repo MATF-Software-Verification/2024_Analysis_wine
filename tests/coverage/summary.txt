@@ -1,0 +1,153 @@
+dlls/ntdll/unix/signal_arm64.gcda:cannot open data file, assuming not executed
+dlls/ntdll/unix/signal_arm.gcda:cannot open data file, assuming not executed
+dlls/ntdll/unix/signal_i386.gcda:cannot open data file, assuming not executed
+dlls/ntdll/unix/version.gcda:cannot open data file, assuming not executed
+File 'dlls/ntdll/unix/cdrom.c'
+Lines executed:0.00% of 988
+Creating 'cdrom.c.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/string_fortified.h'
+Lines executed:100.00% of 10
+Creating 'string_fortified.h.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/stdio2.h'
+Lines executed:30.77% of 26
+Creating 'stdio2.h.gcov'
+
+File 'dlls/ntdll/unix/unix_private.h'
+Lines executed:59.73% of 442
+Creating 'unix_private.h.gcov'
+
+File 'include/wine/debug.h'
+Lines executed:33.28% of 1208
+Creating 'debug.h.gcov'
+
+File 'include/winternl.h'
+Lines executed:0.00% of 4
+Creating 'winternl.h.gcov'
+
+File 'include/basetsd.h'
+Lines executed:54.29% of 70
+Creating 'basetsd.h.gcov'
+
+File 'dlls/ntdll/unix/debug.c'
+Lines executed:41.36% of 162
+Creating 'debug.c.gcov'
+
+File 'dlls/ntdll/unix/env.c'
+Lines executed:76.80% of 1207
+Creating 'env.c.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/unistd.h'
+Lines executed:100.00% of 6
+Creating 'unistd.h.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/fcntl2.h'
+Lines executed:100.00% of 10
+Creating 'fcntl2.h.gcov'
+
+File 'dlls/ntdll/error.h'
+Lines executed:100.00% of 7
+Creating 'error.h.gcov'
+
+File 'dlls/ntdll/locale_private.h'
+Lines executed:41.41% of 198
+Creating 'locale_private.h.gcov'
+
+File 'include/wine/server.h'
+Lines executed:73.73% of 236
+Creating 'server.h.gcov'
+
+File 'include/wine/unixlib.h'
+Lines executed:85.32% of 109
+Creating 'unixlib.h.gcov'
+
+File 'dlls/ntdll/unix/file.c'
+Lines executed:41.48% of 3327
+Creating 'file.c.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/poll2.h'
+Lines executed:0.00% of 2
+Creating 'poll2.h.gcov'
+
+File 'include/winnt.h'
+Lines executed:100.00% of 21
+Creating 'winnt.h.gcov'
+
+File 'include/wine/list.h'
+Lines executed:71.21% of 66
+Creating 'list.h.gcov'
+
+File 'dlls/ntdll/unix/loader.c'
+Lines executed:49.58% of 962
+Creating 'loader.c.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/stdlib.h'
+Lines executed:80.00% of 5
+Creating 'stdlib.h.gcov'
+
+File 'dlls/ntdll/unix/loadorder.c'
+Lines executed:83.54% of 164
+Creating 'loadorder.c.gcov'
+
+File 'dlls/ntdll/unix/process.c'
+Lines executed:36.23% of 955
+Creating 'process.c.gcov'
+
+File 'dlls/ntdll/unix/registry.c'
+Lines executed:52.94% of 425
+Creating 'registry.c.gcov'
+
+File 'dlls/ntdll/unix/security.c'
+Lines executed:12.22% of 532
+Creating 'security.c.gcov'
+
+File 'dlls/ntdll/unix/serial.c'
+Lines executed:0.00% of 503
+Creating 'serial.c.gcov'
+
+File 'dlls/ntdll/unix/server.c'
+Lines executed:49.01% of 955
+Creating 'server.c.gcov'
+
+File 'dlls/ntdll/unix/signal_x86_64.c'
+Lines executed:22.12% of 1112
+Creating 'signal_x86_64.c.gcov'
+
+File 'dlls/ntdll/unix/dwarf.h'
+Lines executed:0.00% of 401
+Creating 'dwarf.h.gcov'
+
+File 'dlls/ntdll/unix/socket.c'
+Lines executed:0.00% of 1220
+Creating 'socket.c.gcov'
+
+File '/nix/store/qwi863qp79xkdm2yw3xzjh73dpg9qh67-glibc-2.42-84-dev/include/bits/byteswap.h'
+Lines executed:0.00% of 4
+Creating 'byteswap.h.gcov'
+
+File 'dlls/ntdll/unix/sync.c'
+Lines executed:40.63% of 1622
+Creating 'sync.c.gcov'
+
+File 'dlls/ntdll/unix/system.c'
+Lines executed:51.20% of 1789
+Creating 'system.c.gcov'
+
+File 'dlls/ntdll/unix/tape.c'
+Lines executed:0.00% of 230
+Creating 'tape.c.gcov'
+
+File 'dlls/ntdll/unix/thread.c'
+Lines executed:26.42% of 1457
+Creating 'thread.c.gcov'
+
+File 'dlls/ntdll/unix/virtual.c'
+Lines executed:48.19% of 3061
+Creating 'virtual.c.gcov'
+
+File 'include/wine/rbtree.h'
+Lines executed:87.82% of 156
+Creating 'rbtree.h.gcov'
+
+Lines executed:38.37% of 23652
