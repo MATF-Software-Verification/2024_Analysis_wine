@@ -81,5 +81,6 @@ pkgs.mkShell {
     export CCACHE_BASEDIR="$HOME/Faks/vs/wine"
 
     export VS_CLANG_CPATH="${pkgs.glibc.dev}/include:${pkgs.valgrind.dev}/include"
+    export LD_LIBRARY_PATH="${pkgs.freetype}/lib:${pkgs.fontconfig.lib}/lib:$LD_LIBRARY_PATH"
   '';
 }

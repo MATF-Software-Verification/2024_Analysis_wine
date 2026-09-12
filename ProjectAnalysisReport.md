@@ -516,13 +516,123 @@ Prosleđivanje `debug_options` koji je `NULL` neće imati velike posledice jer j
 > Isečak iz standarda: If an argument to a function has an invalid value (such as a value outside the domain of the function, or a pointer outside the address space of the program, or a **null pointer**, or a pointer to non-modifiable storage when the corresponding parameter is not const-qualified) or a type (after promotion) not expected by a function with variable number of arguments, the behavior is undefined.
 
 
+## Testovi
+Wine ima svoj način za testiranje preko `include/wine/test.h` zaglavlja, dok se sami testovi nalaze na 
+putanjama formata `dlls/<modul>/tests/`. S obzirom da mi ovde razmatramo `ntdll`, odgovarajući testovi 
+su u `dlls/ntdll/tests/`.
+S obzirom da smo sa `clang-tidy` pronašli ono sumnjivo ponašanje u vidu pristupa nizu van okvira, 
+red bi bio da testiramo to, s obzirom da testovi za to ne postoje (inače bi verovatno uhvatili problem):
+
+```bash
+cd $WINESRC && grep -rn "NtQueryInformationToken" dlls/*/tests/*.c
+# Ne vraca nista
+```
+
+Napisaćemo jedan jednostavan integracioni test:
+```c
+static void test_query_token_info(void)
+{
+    TOKEN_STATISTICS stats;
+    NTSTATUS status;
+    HANDLE token;
+    ULONG length;
+    ULONG retlen;
+
+    status = NtOpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &token );
+    ok( !status, "NtOpenProcessToken failed %lx\n", status );
+
+    // Known class in info_len, with bad length, must fail
+    retlen = 42;
+    length = 0;
+    status = NtQueryInformationToken( token, TokenStatistics, NULL, length, &retlen );
+    ok( status == STATUS_BUFFER_TOO_SMALL, "got %lx\n", status );
+    ok( retlen == sizeof(TOKEN_STATISTICS), "got %lu\n", retlen );
+
+    // Known class in info_len, with correct length, must succeed
+    retlen = 42;
+    length = sizeof(TOKEN_STATISTICS);
+    status = NtQueryInformationToken( token, TokenStatistics, &stats, length, &retlen );
+    ok( !status, "got %lx\n", status );
+    ok( retlen == sizeof(TOKEN_STATISTICS), "got %lu\n", retlen );
 
 
+    // Class not in info_len, with correct length, undefined behavior
+    retlen = 42;
+    length = 0;
+    status = NtQueryInformationToken( token, TokenIsAppSilo, NULL, length, &retlen );
+    ok( status == STATUS_NOT_IMPLEMENTED, "got %lx\n", status );
+    ok( retlen == length, "got %lu\n", retlen );
 
+    NtClose( token );
+}
+```
+Objašnjenje koda:
+   * Token je Windows objekat koji je kao mešavina UID, GID, privilegija i tome slično na Linuksu, 
+     samo je ovde sve u jednom.
+   * `NtOpenProcessToken` će nam dati token trenutnog procesa
+   * `NtQueryInformationToken` će, kao što joj ime kaže, da traži neku informaciju od tokena, 
+      npr. informaciju o grupi, korisniku, itd. Te informacije su u prethodnoj sekciji bile
+      u onom `enum`-u.
+      Ono što je nama bitno je sledeće:
+      ```c
+        ULONG len = 0;
+        if (class < MaxTokenInfoClass) len = info_len[class];
+        if (retlen) *retlen = len;
+        if (length < len) return STATUS_BUFFER_TOO_SMALL;
+      ```
+      Razmotrimo slučajeve / mini-testove:
+      1. Klasa koju koristimo je `TokenStatistics`, jedna od retkih kojoj odgovarajući element u
+        `info_len` koji nije `0`, i ovde testiramo kako se program ponaša kada se prosledi 
+         pogrešna dužina.
+         Ova klasa je poznata `info_len` nizu (zbog veličine ispisa neće biti kopiran ovde, ali postoji
+         u `dlls/ntdll/unix/security.c`, kao i u `clang-tidy` sekciji), pa će prvi `if` proći, 
+         `retlen` će postati `sizeof(TOKEN_STATISTICS)`, međutim treći `if` će pući
+         i test će vratiti `STATUS_BUFFER_TOO_SMALL`, što je korektno ponašanje u ovom slučaju.
 
+      2. Drugi test je sličan prvom, ali sa dobrom dužinom. Test prolazi.
+      
+      3. Treći je najzanimljiviji. `TokenIsAppSilo` nije u `info_len` (bag koji smo pronašli u
+         `clang-tidy` sekciji), dužina je i nebitna onda ali recimo da je tačna.
+         Ono što se dešava jeste da ćemo imati **pristup van okvira niza**, što je nedefinisano ponašanje.
+         Najverovatnije ćemo pročitati nešto što ne bismo smeli. Ovim bismo praktično mogli da slučajno
+         pročitamo nešto iz memorije što nam ne pripada.
+         Recimo da smo pročitali smeće `123456`.
+         `retlen` će dobiti tu vrednost i test će pasti jer nije `retlen == length`.
+         Međutim, ono što je moglo da se desi, jeste da pročitano smeće upravo bude `0`, pa bi 
+         test zapravo prošao, iako se program ne ponaša dobro!
+         
+Iznad smo videli da test nije idealan, jer postoji situacija kada neće prijaviti grešku, iako je ponašanje loše.
+Autor nije svestan načina na koji bi ovo moglo biti popravljeno, bez da se otkloni uzrok problema.
 
+Pre nego što pokrenemo fajl, neophodno je "objasniti" Wine-u da smo dodali novi test:
+  1. Dodamo `token.c \` u `SOURCES` u `dlls/ntdll/test/Makefile.in` kako bi Wine postao svestan testa
+  2. `make depend` koji će ažurirati glavni Makefile, kao i regenerisati `dlls/ntdll/tests/testlist.c`
+  3. `make -j$(nproc) dlls/ntdll/tests/all` 
+  
+Sada možemo pokrenuti test:
+```bash
+cd $WINESRC && ./wine dlls/ntdll/tests/x86_64-windows/ntdll_test.exe token
+```
+Ovde vidimo zanimljivu stvar, a to je da se testovi pokreću preko Windows `.exe` programa, kroz Wine.
+Ovo nam omogućava da testove pokrenemo i direktno na Windowsu, bez Wine-a.
+U tom slučaju, imamo više mogućih ishoda:
+    * Test prolazi na Windowsu, ne prolazi preko Wine => Našli smo bag u Wine-u
+    * Test ne prolazi ni na Windowsu ni na Wine => Loše napisan test
+    * Prolaze oba => Wine je pravilno implementirao te funkcionalnosti 
+       
+Ono što je bitno znati, a ujedno i zanimljivo, jeste da Wine nema svoju specifikaciju, već mu je
+cilj da se ponaša kao Windows u 100% slučajeva, pa se ponašanje Windowsa uzima kao po definiciji tačno.
+Ovo dovodi do toga da, ako neki bag postoji na Windowsu, on treba da postoji i u Wine-u, i to ne samo da 
+treba da postoji, nego se aktivno odbija njegovo popravljanje, usled potencijalnih problema koji bi mogli
+nastati u programima koji su računali na takvo ponašanje.
 
-
+Radi kompletnosti, evo rezultata testiranja:
+```c
+token.c:41: Test failed: got c0000023
+token.c:42: Test failed: got 1867804271
+0020:token: 7 tests executed (0 marked as todo, 0 as flaky, 2 failures), 0 skipped.
+```
+Očekivano, 2 testa su pala.
 
 
 
