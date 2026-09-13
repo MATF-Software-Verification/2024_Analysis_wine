@@ -128,7 +128,7 @@ Analiziran je 21 fajl Unix strane `ntdll` modula (`wine/dlls/ntdll/unix`) uz pom
 ### Pronađeni problemi
 #### Wine
 ##### Greške
-Što se tiče Wine, glavni problem pronađen u `ntdll/unix/security.c`, gde je `clang-tidy`-jev Clang Static Analyzer ukazao na **pristupanje nizu van okvira** koje se dešava pod 
+Što se tiče Wine, glavni problem pronađen u `ntdll/unix/security.c`, gde je `clang-tidy` Clang Static Analyzer ukazao na **pristupanje nizu van okvira** koje se dešava pod 
 specifičnim okolnostima koje su opisane detaljno u izveštaju. Vezano za taj bag je kreiran i [autorov merge request](https://gitlab.winehq.org/wine/wine/-/merge_requests/11958) na zvaničnom 
 Wine Gitlab repozitorijumu, a čiji se epilog i dalje čeka, u trenutku pisanja ovog zaključka.
 
@@ -151,7 +151,7 @@ Valgrind dobija svoj poseban deo, s obzirom na količinu ~~muke~~ posla koju je 
 Autor je koristio `WoW64` verziju Wine-a, koji je prva preporuka u zvaničnoj Wine dokumentaciji, i koji može da pokrene 32-bitne aplikacije u 64-bitnom okruženju, bez ikakvih 32-bitnih biblioteka.
 Valgrindu, koji je kroz istoriju često imao čudne interakcije sa Wine-om, ovo nije preterano odgovaralo,
 pa je autor naišao na bagove u Valgrindu, tražeći bagove u Wine-u. 
-Oba baga su opisana u izveštaju detaljno, ali ukratko:
+Oba potvrđena baga, kao i 1 potencijalni,  su opisani u izveštaju detaljno, ali ukratko:
    * Jedan od bagova je bio vezan za `ioctl` funkciju, kojoj se prosleđuju struktura sa 3 polja kojoj je neophodno popuniti samo 2 polja, s obzirom da Linux jezgro popunjava treće.
      Međutim, Valgrind nije svestan toga.
      Autor je u vezi ovoga bio u kontaktu sa istim malopre pomenutim Wine programerom, koji je uz dogovor sa autorom o tome obavestio Valgrind programere: [Bug 525637](https://bugs.kde.org/show_bug.cgi?id=525637)
