@@ -116,7 +116,55 @@ Ova komanda treba da vrati:
   * [perf](https://perfwiki.github.io/main/)
 
 ## Zaključak
+Motivacija za odabir Wine kao projekta za analizu je bila jednostavna: projekat je star 33 godine i pisan je u programskom jeziku C, što je autoru delovalo kao pogodan izbor za testiranje alata,
+usled raznih malih i velikih problema koje je lako prevideti u C kodu, pogotovo kada postoji više miliona linija koda.
+
+Analiziran je 21 fajl Unix strane `ntdll` modula (`wine/dlls/ntdll/unix`) uz pomoć 6 alata iz različitih kategorija:
+ * statička analiza (`cppcheck`, `clang-tidy`)
+ * dinamička analiza (`Valgrind Memcheck`, `UBSan`)
+ * testiranje sa merenjem pokrivenosti (`winetest` + `gcov`)
+ * profilisanje (`perf`)
+ 
+### Pronađeni problemi
+#### Wine
+##### Greške
+Što se tiče Wine, glavni problem pronađen u `ntdll/unix/security.c`, gde je `clang-tidy`-jev Clang Static Analyzer ukazao na **pristupanje nizu van okvira** koje se dešava pod 
+specifičnim okolnostima koje su opisane detaljno u izveštaju. Vezano za taj bag je kreiran i [autorov merge request](https://gitlab.winehq.org/wine/wine/-/merge_requests/11958) na zvaničnom 
+Wine Gitlab repozitorijumu, a čiji se epilog i dalje čeka, u trenutku pisanja ovog zaključka.
+
+Uz pomoć `cppcheck` alata je pronađeno neželjeno ponašanje u `ntdll/unix/debug.c` u vezi sa pozivom `realloc` funkcije, a koje nastaje kada `realloc` ne uspe da se izvrši usled nedostatka memorije,
+što kasnije uzrokuje `SIGSEGV`. Za ovaj problem nije napravljena ispravka, nakon konsultacije sa jednim od aktivnijih Wine programera, jer se dešava dovoljno rano, a uslov da se desi je takođe toliko 
+katastrofalan (~1KB-1MB slobodnog prostora na mašini) da bi Wine svakako prestao sa radom, čak i ako se problem ispravi.
+
+Pronađeno je i malo curenje od 63 bajta, na samom početku Wine procesa, koje se isto dešava samo jednom po pokretanju procesa, i isto je zanemarljivo.
+
+##### Uska grla
+Profilisanje kratkotrajnih procesa (profilisan je `file` test) pokazuje da 37% vremena odlazi na baratanje fontovima (`libfreetype`, `libfontconfig`, ...), 
+a još 6.09% na `find_env_var`, funkciju koja linearno pretražuje Windows okruženje pri svakom postavljanju promenljive.
+
+Uzrok skeniranja fontova je Wine implementaciona odluka i u merenju se ponavlja u svakom procesu, dok je vreme provedeno u `find_env_var` posledica interesantnog dizajna Windows okruženja.
+Zbog prirode ovih funkcija, možemo da zaključimo da ove stvari uzimaju veliki deo vremena kratkotrajnim procesima, dok kod dugotrajnih programa nisu preterano bitne, s obzirom da se njihova cena plati
+jednom i to je to.
+
+#### Valgrind
+Valgrind dobija svoj poseban deo, s obzirom na količinu ~~muke~~ posla koju je zadao autoru projekta.
+Autor je koristio `WoW64` verziju Wine-a, koji je prva preporuka u zvaničnoj Wine dokumentaciji, i koji može da pokrene 32-bitne aplikacije u 64-bitnom okruženju, bez ikakvih 32-bitnih biblioteka.
+Valgrindu, koji je kroz istoriju često imao čudne interakcije sa Wine-om, ovo nije preterano odgovaralo,
+pa je autor naišao na bagove u Valgrindu, tražeći bagove u Wine-u. 
+Oba baga su opisana u izveštaju detaljno, ali ukratko:
+   * Jedan od bagova je bio vezan za `ioctl` funkciju, kojoj se prosleđuju struktura sa 3 polja kojoj je neophodno popuniti samo 2 polja, s obzirom da Linux jezgro popunjava treće.
+     Međutim, Valgrind nije svestan toga.
+     Autor je u vezi ovoga bio u kontaktu sa istim malopre pomenutim Wine programerom, koji je uz dogovor sa autorom o tome obavestio Valgrind programere: [Bug 525637](https://bugs.kde.org/show_bug.cgi?id=525637)
+   * Drugi bag je vezan za korišćenje `int 0x80` instrukcije koja služi za sistemske pozive u 32-bitnom okruženju. Problem je što može da se koristi i u 64-bitnom, ali Valgrind to ne podržava.
+     Autor ovo nije prijavio pošto već postoje 2 odvojene prijave: [Bug 342988](https://bugs.kde.org/show_bug.cgi?id=342988) i [Bug 454482](https://bugs.kde.org/show_bug.cgi?id=454482)
+     
+   * Treći bag, i jedini koji nije skroz potvrđen, ali po autorovom mišljenju isto jeste problem, je upis u segmentni registar `ds`. 
+     Koliko je autor uspeo da istraži, ovo je zvanično podržano u 64-bitnom okruženju, ali ga praktično niko ne koristi tu, pa ga najverovatnije ni Valgrind ne implementira.
+     
+
+### Završna reč
+Glavni rezultati analize su 2 pronađena baga u Wine-u, od kojih je jedan ozbiljan i ispravka je poslata iskusnijim Wine programerima na proveru, kao i 1 (potencijalno 2) nova i 1 stari bag u Valgrind-u (konkretno u njegovoj VEX međureprezentaciji).
+Pored toga, autor je stekao uvid u rad Wine programa, kao i potpuno novo iskustvo rada na projektu ovog obima, uz korišćenje alata za analizu.
 
 ## TODO
-
 1) Komande za ne-nix sisteme
