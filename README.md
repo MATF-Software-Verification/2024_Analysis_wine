@@ -39,6 +39,10 @@ U repozitorijumu će biti dat `shell.nix` fajl, koji predstavlja okruženje u ko
 i koje će automatski dovući sve neophodne pakete za kompilaciju Wine-a iz njegovog izvornog koda, postaviti neke
 promenljive okruženja koje će nam biti od koristi, kao i same alate poput `valgrind`, `clang-tools`, itd.
 
+### Ne-nix sistemi
+Preporučen način je instalirati [nix](https://nixos.org/download/) menadžer paketa, koji radi na svim 
+poznatijim distribucijama.
+
 ### Wine source
 
 Pre nego što išta uradimo, s obzirom da će biti korišćen Valgrind, treba imati u vidu da
@@ -57,7 +61,8 @@ Koraci za kompilaciju WoW64 verzije Wine-a (koristeći `nix`):
 1) Kloniramo ovaj repozitorijum:
 
    ```bash
-   git clone --recurse-submodules git@github.com:MATF-Software-Verification/2024_Analysis_wine.git
+   # git clone --recurse-submodules git@github.com:MATF-Software-Verification/2024_Analysis_wine.git # SSH varijanta
+   git clone --recurse-submodules https://github.com/MATF-Software-Verification/2024_Analysis_wine.git
    cd 2024_Analysis_wine
    ```
 
@@ -67,36 +72,39 @@ Koraci za kompilaciju WoW64 verzije Wine-a (koristeći `nix`):
    bash setup.sh
    ```
 
-3) Aktiviramo spremljeno `nix` okruženje:
+3) Sredimo promenljive okruženja u `shell.nix`:
+   * `WINESRC` koja pokazuje na `wine` repozitorijum
+   * `WINEPREFIX` koji će reći Wine-u gde da napravi prefiks, direktorijum u kom će Wine da imitira Windows hijerarhiju direktorijuma
+   * `CCACHE_BASEDIR` koji treba da bude jedan direktorijum iznad kloniranog repozitorijuma
+   
+4) Aktiviramo spremljeno `nix` okruženje:
 
    ```bash
    nix-shell
    ```
 
-4) Premestimo se u `wine` direktorijum:
+5) Premestimo se u `wine` direktorijum:
 
    ```bash
    cd wine
    ```
 
-5) Pokrećemo `configure` skriptu:
+6) Pokrećemo `configure` skriptu:
 
    ```bash
    ./configure CC="ccache gcc" i386_CC="ccache i686-w64-mingw32-gcc" \
        x86_64_CC="ccache x86_64-w64-mingw32-gcc" \
        --enable-archs=i386,x86_64 CFLAGS="-g -Og -fno-inline"
    ```
-
 > Napomena: CFLAGS preporuke uzete iz dokumentacije: [Compiler Optimizations & Call-Stacks](https://gitlab.winehq.org/wine/wine/-/wikis/Building-Wine#compiler-optimizations--call-stacks)
 
-
-6) Pokrećemo `make`:
+7) Pokrećemo `make`:
 
    ```bash
    make -j$(nproc)
    ```
 
-7) Provera da je Wine prepoznao da je Valgrind instaliran:
+8) Provera da je Wine prepoznao da je Valgrind instaliran:
 
 ``` bash
 grep VALGRIND include/config.h

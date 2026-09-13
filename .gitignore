@@ -1,7 +1,5 @@
 *.org
-clang-tidy/*.txt
 ubsan/ubsan.*
-tests/*.log
 tests/coverage/results/*.gcov
 perf/perf.data*
 
