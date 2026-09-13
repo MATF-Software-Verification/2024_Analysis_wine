@@ -62,8 +62,8 @@ Koraci za kompilaciju WoW64 verzije Wine-a (koristeći `nix`):
 
    ```bash
    # git clone --recurse-submodules git@github.com:MATF-Software-Verification/2024_Analysis_wine.git # SSH varijanta
-   git clone --recurse-submodules https://github.com/MATF-Software-Verification/2024_Analysis_wine.git
-   cd 2024_Analysis_wine
+   git clone --recurse-submodules https://github.com/MATF-Software-Verification/2024_Analysis_wine.git \
+     && cd 2024_Analysis_wine
    ```
 
 2) Pokrenemo `setup.sh` koji će symlink-ovati `valgrind/wine-valgrind-scripts` na `wine/tools/valgrind`:
@@ -135,7 +135,7 @@ Analiziran je 21 fajl Unix strane `ntdll` modula (`wine/dlls/ntdll/unix`) uz pom
  
 ### Pronađeni problemi
 #### Wine
-##### Greške
+###### Greške
 Što se tiče Wine, glavni problem pronađen u `ntdll/unix/security.c`, gde je `clang-tidy` Clang Static Analyzer ukazao na **pristupanje nizu van okvira** koje se dešava pod 
 specifičnim okolnostima koje su opisane detaljno u izveštaju. Vezano za taj bag je kreiran i [autorov merge request](https://gitlab.winehq.org/wine/wine/-/merge_requests/11958) na zvaničnom 
 Wine Gitlab repozitorijumu, a čiji se epilog i dalje čeka, u trenutku pisanja ovog zaključka.
@@ -146,7 +146,7 @@ katastrofalan (~1KB-1MB slobodnog prostora na mašini) da bi Wine svakako presta
 
 Pronađeno je i malo curenje od 63 bajta, na samom početku Wine procesa, koje se isto dešava samo jednom po pokretanju procesa, i isto je zanemarljivo.
 
-##### Uska grla
+###### Uska grla
 Profilisanje kratkotrajnih procesa (profilisan je `file` test) pokazuje da 37% vremena odlazi na baratanje fontovima (`libfreetype`, `libfontconfig`, ...), 
 a još 6.09% na `find_env_var`, funkciju koja linearno pretražuje Windows okruženje pri svakom postavljanju promenljive.
 
