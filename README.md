@@ -108,10 +108,15 @@ Ova komanda treba da vrati:
 ```
 
 ## Spisak korišćenih alata
+  * [Valgrind Memcheck](https://valgrind.org/docs/manual/mc-manual.html) 
+  * [Cppcheck](https://cppcheck.sourceforge.io/)
+  * [clang-tidy](https://clang.llvm.org/extra/clang-tidy/)
+  * [UndefinedBehaviorSanitizer](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html)
+  * winetest + [gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)
+  * [perf](https://perfwiki.github.io/main/)
 
 ## Zaključak
 
 ## TODO
 
 1) Komande za ne-nix sisteme
-2) cppcheck/html komitovati ili ne?
