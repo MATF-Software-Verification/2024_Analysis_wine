@@ -173,6 +173,3 @@ Oba potvrđena baga, kao i 1 potencijalni,  su opisani u izveštaju detaljno, al
 ### Završna reč
 Glavni rezultati analize su 2 pronađena baga u Wine-u, od kojih je jedan ozbiljan i ispravka je poslata iskusnijim Wine programerima na proveru, kao i 1 (potencijalno 2) nova i 1 stari bag u Valgrind-u (konkretno u njegovoj VEX međureprezentaciji).
 Pored toga, autor je stekao uvid u rad Wine programa, kao i potpuno novo iskustvo rada na projektu ovog obima, uz korišćenje alata za analizu.
-
-## TODO
-1) Komande za ne-nix sisteme
